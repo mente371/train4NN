@@ -600,3 +600,127 @@ import Foundation
         return ninputs
     }
 }
+
+@objc class NN73ka : NNb {
+    
+    internal convenience override init () {
+        self.init(ni:7, nh:3, no:1)
+        self.addplistcoef = "~/Finance/Aetius/dicoA" + nom + ".plist"
+        self.addR2data = "~/Finance/Aetius/testR2A" + nom + ".csv"
+        ca = 1.0
+        cb = 2.0
+        decodeNN()
+    }
+    internal init(ni:NSInteger, nh:NSInteger, no:NSInteger) {
+        super.init()
+        self.nom = "nn73ka"
+        self.addplistcoef = "~/Finance/Aetius/dicoA" + nom + ".plist"
+        self.addR2data = "~/Finance/Aetius/testR2A" + nom + ".csv"
+        // number of input, hidden, and output nodes
+        self.ni = ni+1 // +1 for bias node
+        self.nh = nh
+        self.no = no
+        ca = 1.0
+        cb = 2.0
+        
+        // activations for nodes
+        self.ai = [1.0]*&self.ni
+        self.ah = [1.0]*&self.nh
+        self.ao = [1.0]*&self.no
+        
+        //create weights
+        self.wi = makeMatrix(self.ni, J: self.nh)
+        self.wo = makeMatrix(self.nh, J: self.no)
+        
+        //    if decodeNN() == false {
+        for i in 0...(self.ni-1){
+            for j in 0...(self.nh-1){
+                self.wi[i][j]=randomFunc(-0.6, b: 0.6)
+                //   print(self.wi[i][j])
+            }
+        }
+        
+        for j in 0...(self.nh-1){
+            for k in 0...(self.no-1){
+                self.wo[j][k] = randomFunc(-0.8, b: 0.8)
+                //    print(self.wi[j][k])
+            }
+        }
+        //   }
+        
+        // last change in weights for momentum
+        self.ci = makeMatrix(self.ni, J: self.nh)
+        self.co = makeMatrix(self.nh, J: self.no)
+        
+    }
+    
+    override func chargeData(add : String)->(Array<Array<Array<Double>>>) {
+        let nadd = (add as NSString).stringByExpandingTildeInPath
+        let dat = NSArray(contentsOfFile:nadd)
+        let varob = "etafiNY.pbr"
+        /*
+         var arob = Array<Double>()
+         for item in dat! {
+         let item2  = item as! NSDictionary
+         let varob = item2.objectForKey(varob) as! Double
+         arob.append(varob)
+         }
+         let dico = statMono(arob)
+         let e = dico["moy"]
+         let s = dico["ec"]
+         */
+        var pat = Array<Array<Array<Double>>>()
+        if dat!.count >= 100 {
+            for item in dat! {
+                let item2  = item as! NSDictionary
+                let ivarob = item2.objectForKey(varob) as! Double
+                //      let zob = zscore(ivarob, e : e!, s : s!)
+                if (ivarob > 0.0) {
+                    let roeci : Double = item2.objectForKey("etafiNY.roeci") as! Double
+                    let levScore2 = item2.objectForKey("levScore2") as! Double
+                    //            let zlatoScore = item2.objectForKey("zlatoScore") as! Double
+                    let n3Score = item2.objectForKey("n3Score") as! Double
+                    //      let implGeva = item2.objectForKey("implGeva") as! Double
+                    //     let trc4 = item2.objectForKey("trc4") as! Double
+                    let fcfyMoy = item2.objectForKey("etafiMoy.fcfy") as! Double
+                    let tfcfy = truncsigm(fcfyMoy,coef: 30.0)
+            //        let potg : Double = item2.objectForKey("etafiMoy.potg") as! Double
+            //        let tpotg = truncsigm(potg,coef: 30.0)
+                    //             let varroce = item2.objectForKey("etafiVar.roce") as! Double
+                    //             let tvarroce = truncsigm(varroce,coef: 20.0)
+                    let vareps = item2.objectForKey("etafiVar.eps") as! Double
+                    let tvareps = truncsigm(vareps,coef: 40.0)
+                    let vareva = item2.objectForKey("etafiVar.eva") as! Double
+                    let tvareva = truncsigm(vareva,coef: 40.0)
+                    let cap = item2.objectForKey("cap") as! Double
+                    let lcap = logcap(cap)
+                    let iar : Array<Array<Double>> = [[roeci, levScore2, n3Score, tfcfy, tvareva, tvareps, lcap],[ivarob]]
+                    pat.append(iar)
+                }
+            }
+        }
+        return pat
+    }
+    
+    override func normaliseInputsBruts(inputs:Array<Double>)->(Array<Double>) {
+        let lni = inputs.count
+        var ninputs = inputs//[Double](count: lni, repeatedValue:0.0)
+        
+        for j in 0...lni-1 {
+            if j == 3 {
+                ninputs[j] = truncsigm(inputs[j], coef:30.0)
+            }
+            if j == 4 {
+                ninputs[j] = truncsigm(inputs[j], coef:40.0)
+            }
+            if j == 5 {
+                ninputs[j] = truncsigm(inputs[j], coef:40.0)
+            }
+            if j == 6 {
+                ninputs[j] = logcap(inputs[j])
+            }
+            ninputs[j] = cb * ((ninputs[j] - minInputs[j]) / (maxInputs[j] - minInputs[j])) - ca
+        }
+        return ninputs
+    }
+}
